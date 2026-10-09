@@ -1,0 +1,165 @@
+<p dir="ltr">A streaming plan allows a limited number of devices to be signed in at the same time. A device takes a slot when it signs in and frees the slot when it signs out, so a household can share one plan within its limit. If an extra device can sign in, switching from one device to another uses two slots, or a signed-out device keeps its slot, paying customers are locked out of their own plan.</p>
+
+<p dir="ltr"><br />
+Your task is to fix the device limit tool so that every command updates the data correctly and prints the correct success message or error reason.</p>
+
+<p dir="ltr"><br />
+<strong>State File</strong></p>
+
+<p dir="ltr"><strong>File: <span style="font-family:Courier New , Courier , monospace;">data/plan.json</span> (read-only)</strong></p>
+
+<p dir="ltr">For example:</p>
+
+<pre>
+<code class="language-json">{
+  &quot;plan&quot;: &quot;Family&quot;,
+  &quot;device_limit&quot;: 5
+}</code></pre>
+
+<p dir="ltr">Fields:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation"><span style="font-family:Courier New , Courier , monospace;">plan</span> (string): the plan name.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation"><span style="font-family:Courier New , Courier , monospace;">device_limit</span> (integer): how many devices may be signed in at once.</p>
+	</li>
+</ul>
+
+<p dir="ltr"><br />
+<strong>File: <span style="font-family:Courier New , Courier , monospace;">data/sessions.json</span></strong></p>
+
+<p dir="ltr">For example:</p>
+
+<pre>
+<code class="language-json">{
+  &quot;active&quot;: [&quot;phone&quot;,&quot;tv&quot;,&quot;laptop&quot;,&quot;kids tablet&quot;,&quot;game console&quot;]
+}</code></pre>
+
+<p dir="ltr">Fields:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation"><span style="font-family:Courier New , Courier , monospace;">active</span> (list of strings): the devices signed in, in sign-in order.</p>
+	</li>
+</ul>
+
+<p dir="ltr">Device names are compared exactly, and a name with spaces is quoted on the command line. When writing <span style="font-family:Courier New , Courier , monospace;">data/sessions.json</span> back, preserve the field order shown above, and keep devices in the order they appear in the file.</p>
+
+<p dir="ltr"><br />
+<strong>Command Output</strong></p>
+
+<p dir="ltr">Each command prints a one-line result on success, or <span style="font-family:Courier New , Courier , monospace;">Error: &lt;REASON&gt;</span> on failure. Its rules are checked in the order listed, stopping at the first failure, and on failure <span style="font-family:Courier New , Courier , monospace;">data/sessions.json</span> is not modified.</p>
+
+<p dir="ltr"><br />
+<strong>Commands</strong></p>
+
+<p dir="ltr"><br />
+<strong><span style="font-family:Courier New , Courier , monospace;">login</span></strong></p>
+
+<p dir="ltr">Signs a device in.</p>
+
+<p dir="ltr"><strong>Usage</strong></p>
+
+<pre>
+<code>./devices login &lt;device&gt;</code></pre>
+
+<p dir="ltr"><strong>Output</strong></p>
+
+<pre>
+<code>&lt;device&gt; signed in (&lt;used&gt;/&lt;limit&gt;)</code></pre>
+
+<p dir="ltr"><strong>Rules</strong></p>
+
+<p dir="ltr">Check these rules in order and stop at the first failure:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If the device is already signed in, fail with <span style="font-family:Courier New , Courier , monospace;">ALREADY_LOGGED_IN</span>.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If <span style="font-family:Courier New , Courier , monospace;">device_limit</span> devices are already signed in, fail with <span style="font-family:Courier New , Courier , monospace;">DEVICE_LIMIT</span>.</p>
+	</li>
+</ul>
+
+<p dir="ltr">On success:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">Append the device.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation"><span style="font-family:Courier New , Courier , monospace;">&lt;used&gt;</span> is the number signed in afterwards.</p>
+	</li>
+</ul>
+
+<p dir="ltr"><br />
+<strong><span style="font-family:Courier New , Courier , monospace;">logout</span></strong></p>
+
+<p dir="ltr">Signs a device out and frees its slot.</p>
+
+<p dir="ltr"><strong>Usage</strong></p>
+
+<pre>
+<code>./devices logout &lt;device&gt;</code></pre>
+
+<p dir="ltr"><strong>Output</strong></p>
+
+<pre>
+<code>&lt;device&gt; signed out (&lt;used&gt;/&lt;limit&gt;)</code></pre>
+
+<p dir="ltr"><strong>Rules</strong></p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If the device is not signed in, fail with <span style="font-family:Courier New , Courier , monospace;">NOT_LOGGED_IN</span>.</p>
+	</li>
+</ul>
+
+<p dir="ltr">On success, remove the device.</p>
+
+<p dir="ltr"><br />
+<strong><span style="font-family:Courier New , Courier , monospace;">switch</span></strong></p>
+
+<p dir="ltr">Replaces a signed-in device with another device in a single step.</p>
+
+<p dir="ltr"><strong>Usage</strong></p>
+
+<pre>
+<code>./devices switch &lt;old&gt; &lt;new&gt;</code></pre>
+
+<p dir="ltr"><strong>Output</strong></p>
+
+<pre>
+<code>Switched &lt;old&gt; to &lt;new&gt; (&lt;used&gt;/&lt;limit&gt;)</code></pre>
+
+<p dir="ltr"><strong>Rules</strong></p>
+
+<p dir="ltr">Check these rules in order and stop at the first failure:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If <span style="font-family:Courier New , Courier , monospace;">old</span> and <span style="font-family:Courier New , Courier , monospace;">new</span> are the same name, fail with <span style="font-family:Courier New , Courier , monospace;">SAME_DEVICE</span>.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If <span style="font-family:Courier New , Courier , monospace;">old</span> is not signed in, fail with <span style="font-family:Courier New , Courier , monospace;">NOT_LOGGED_IN</span>.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">If <span style="font-family:Courier New , Courier , monospace;">new</span> is already signed in, fail with <span style="font-family:Courier New , Courier , monospace;">ALREADY_LOGGED_IN</span>.</p>
+	</li>
+</ul>
+
+<p dir="ltr">On success:</p>
+
+<ul>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">Replace <span style="font-family:Courier New , Courier , monospace;">old</span> with <span style="font-family:Courier New , Courier , monospace;">new</span> in the same position.</p>
+	</li>
+	<li aria-level="1" dir="ltr">
+	<p dir="ltr" role="presentation">The switch works even when the limit is full, because the old device leaves first.</p>
+	</li>
+</ul>
+
+<p><br />
+<strong>Note</strong>: Refer to <span style="font-family:Courier New , Courier , monospace;">README.md</span> for more details and examples.</p>
