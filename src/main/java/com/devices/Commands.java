@@ -50,17 +50,18 @@ public final class Commands {
 
     /// Sign a device in to the plan.
     public static CommandResult login(Sessions sessions, Plan plan, String device) {
-        if (isSignedIn(sessions, device)) {
+        if (!sessions.active.isEmpty() && sessions.active.get(sessions.active.size() - 1).equals(device)) {
             return failure(Reason.ALREADY_LOGGED_IN);
         }
-        if (freeSlots(sessions, plan) == 0) {
+        int slots = freeSlots(sessions, plan);
+        if (slots == 0) {
             return failure(Reason.DEVICE_LIMIT);
         }
 
         sessions.active.add(device);
 
         return success(device + " signed in " +
-                       formatUsage(signedInCount(sessions), plan.deviceLimit));
+                       formatUsage(plan.deviceLimit - slots, plan.deviceLimit));
     }
 
     /// Sign a device out of the plan.
@@ -70,7 +71,8 @@ public final class Commands {
             return failure(Reason.NOT_LOGGED_IN);
         }
 
-        sessions.active.remove(index);
+        sessions.active.set(index, sessions.active.get(sessions.active.size() - 1));
+        sessions.active.remove(sessions.active.size() - 1);
 
         return success(device + " signed out " +
                        formatUsage(signedInCount(sessions), plan.deviceLimit));
@@ -78,18 +80,19 @@ public final class Commands {
 
     /// Replace one signed-in device with another in a single step.
     public static CommandResult switchDevice(Sessions sessions, Plan plan, String from, String to) {
-        if (from.equals(to)) {
-            return failure(Reason.SAME_DEVICE);
-        }
         int fromIndex = findDevice(sessions, from);
         if (fromIndex == -1) {
             return failure(Reason.NOT_LOGGED_IN);
         }
-        if (isSignedIn(sessions, to)) {
+        if (from.equals(to) || isSignedIn(sessions, to)) {
             return failure(Reason.ALREADY_LOGGED_IN);
         }
+        if (freeSlots(sessions, plan) == 0) {
+            return failure(Reason.DEVICE_LIMIT);
+        }
 
-        sessions.active.set(fromIndex, to);
+        sessions.active.remove(fromIndex);
+        sessions.active.add(to);
 
         return success("Switched " + from + " to " + to + " " +
                        formatUsage(signedInCount(sessions), plan.deviceLimit));

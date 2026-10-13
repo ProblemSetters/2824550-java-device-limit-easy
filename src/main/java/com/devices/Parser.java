@@ -119,6 +119,7 @@ public final class Parser {
                 } else {
                     value.append(json.charAt(pos++));
                 }
+                skipWs();
             }
             expect('"');
             return value.toString();
